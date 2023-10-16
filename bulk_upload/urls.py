@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from django.urls import include
+
+from bulk_upload.bulk_upload_api import make_bulk_upload
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('make-bulk-upload/', make_bulk_upload),
 ]
