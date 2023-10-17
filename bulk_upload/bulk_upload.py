@@ -18,10 +18,7 @@ API -> (name,document_id)
                    return error for headers
             return model does not exists header
 """
-import json
-
 from vehicle.models import ExcelData
-from django.db import transaction
 from openpyxl import load_workbook
 import cerberus
 from django.apps import apps
@@ -38,7 +35,7 @@ def validate_data(data_schema, data):
 
 
 def validate_headers(model_headers, excel_headers):
-    return model_headers == set(excel_headers)
+    return set(model_headers) == set(excel_headers)
 
 
 def get_model_to_be_updated(app_name, model_name):
@@ -49,10 +46,10 @@ def get_model_to_be_updated(app_name, model_name):
         return None
 
 
-def add_row_data(excel_headers, header_key_dict):
+def add_row_data(excel_data, header_key_dict):
     response_dict = {}
-    for item in excel_headers.items():
-        response_dict[header_key_dict.get(item[0])] = item[1]
+    for key, value in excel_data.items():
+        response_dict[header_key_dict.get(key)] = value
     return response_dict
 
 
@@ -60,9 +57,10 @@ def bulk_upload(name, excel_file):
     try:
         model = ExcelData.objects.filter(name=name).first()
         if model:
-            model_headers = set()
+            model_headers = []
             validation_schema = {}
             header_key_dict = {}
+
             model_name_to_be_updated = model.model_name
             app_name_to_be_updated = model.app_name
             model_to_be_updated = get_model_to_be_updated(app_name_to_be_updated, model_name_to_be_updated)
@@ -71,7 +69,7 @@ def bulk_upload(name, excel_file):
                     f"Model with '{app_name_to_be_updated}_{model_name_to_be_updated}' not found"]
 
             for item in model.structure:
-                model_headers.add(item.get('name'))
+                model_headers.append(item.get('name'))
                 validation_schema[item.get('key')] = item.get('validation')
                 header_key_dict[item.get('name')] = item.get('key')
 
@@ -80,21 +78,24 @@ def bulk_upload(name, excel_file):
 
             excel_headers = [cell.value for cell in sheet[1]]
             validated_headers = validate_headers(model_headers=model_headers, excel_headers=excel_headers)
-
+            data_to_be_uploaded = []
             if validated_headers:
-                with transaction.atomic():
-                    for index, row in enumerate(sheet.iter_rows(min_row=2, values_only=True)):
-                        excel_data = dict(zip(excel_headers, row))
-                        final_data = add_row_data(excel_headers=excel_data,
-                                                  header_key_dict=header_key_dict)
-                        is_valid, errors = validate_data(validation_schema, final_data)
-                        if is_valid:
-                            try:
-                                model_to_be_updated.objects.create(**final_data)
-                            except Exception as err:
-                                return False, [str(err)]
-                        else:
-                            return False, errors
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    excel_data = dict(zip(excel_headers, row))
+                    final_data = add_row_data(excel_data=excel_data,
+                                              header_key_dict=header_key_dict)
+                    is_valid, errors = validate_data(validation_schema, final_data)
+                    if is_valid:
+                        data_to_be_uploaded.append(model_to_be_updated(**final_data))
+                    else:
+                        # todo cerebrus validator giving non specific error
+                        return False, errors
+                try:
+                    model_to_be_updated.objects.bulk_create(data_to_be_uploaded)
+                except Exception as err:
+                    # todo need to handle validation in right way
+                    return False, [str(err)]
+
                 return True, None
             else:
                 return False, ["Excel file headers do not match the expected headers in the database."]
@@ -102,4 +103,4 @@ def bulk_upload(name, excel_file):
             return False, [
                 f"Bulk Upload Data with name '{name}' not found"]
     except Exception as err:
-        return False, [err]
+        return False, [str(err)]
