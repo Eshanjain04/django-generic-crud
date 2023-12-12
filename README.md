@@ -1,5 +1,3 @@
-Certainly! Here's a beautified version of your README file:
-
 # Django Generic CRUD
 
 Django Generic CRUD is an experimental project aimed at generating a generic CRUD (Create, Read, Update, Delete) interface for any basic models in a Django application. The key concept is to leverage Django's capabilities to dynamically fetch models based on app name and model name.
