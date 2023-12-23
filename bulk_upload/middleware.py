@@ -1,12 +1,7 @@
 from django.apps import apps
-from rest_framework.response import Response
-
-from bulk_upload.verfiy_token import verify_token
+from generic_api.utility.verfiy_token import verify_token
+from generic_api.utility.response_handler import ResponseHandler
 from vehicle.models import ModelData
-
-
-def response_handler(status, msg):
-    return Response({"message": f'{msg}'}, status=status)
 
 
 def get_model(app_name, model_name):
@@ -18,16 +13,16 @@ def verify_login(function):
         model_key = kwargs.get('model_key')
         model_data = ModelData.objects.filter(model_key=model_key).first()
         if not model_data:
-            return response_handler(422, "Model with key does not exists")
+            return ResponseHandler(body="Model with key does not exists").error_response()
         kwargs['model_data'] = model_data
-        is_authorized, msg = None, None
+        is_authorized, msg = True, None
         if not getattr(model_data, 'public'):
             is_authorized, msg = verify_token(request=request)
-        if is_authorized == False:
-            return Response({"message": msg}, status=422)
+        if not is_authorized:
+            return ResponseHandler(body=msg).error_response()
         model = get_model(app_name=getattr(model_data, 'app_name'), model_name=getattr(model_data, 'model_name'))
         if not model:
-            return Response({"message": "Model doesnot exists in database"}, status=422)
+            return ResponseHandler(body="Model doesnot exists in database").error_response()
         kwargs['model'] = model
         if getattr(model_data, 'foreign_key_app_name') and getattr(model_data, 'foreign_key_model_name'):
             kwargs['relational_model'] = get_model(app_name=getattr(model_data, 'foreign_key_app_name'),
