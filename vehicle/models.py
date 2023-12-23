@@ -1,4 +1,4 @@
-from generic_api.generic_model import BaseModel
+from generic_api.model_handler import BaseModel
 from django.db import models
 
 
