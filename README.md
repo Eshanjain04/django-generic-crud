@@ -37,8 +37,9 @@ The project also includes a small utility for bulk uploading data into any model
 To get started with this project, follow these steps:
 
 1. Clone the repository.
-2. Configure the models for CRUD and bulk upload.
-3. Run the Django application.
+2. Setup Virtual Env and run command pip install -r requirements.txt
+3. Configure the models for CRUD and bulk upload.
+4. Run the Django application.
 
 ## Contribution
 
