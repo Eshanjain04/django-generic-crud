@@ -7,4 +7,4 @@ class BaseModel(models.Model):
         abstract = True
 
     def to_json(self):
-        return serialize('python', [self])
+        return serialize('python', [self])[0]

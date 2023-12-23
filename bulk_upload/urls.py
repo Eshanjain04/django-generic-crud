@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 
 from bulk_upload.bulk_upload_api import make_bulk_upload
-from generic_api.create import generic_create, generic_get_obj, generic_list
+from generic_api.create import generic_create, generic_get_obj, generic_list, generic_delete_obj, generic_update_obj
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,4 +28,6 @@ urlpatterns = [
     path('generic/<str:model_key>/add/', generic_create),
     path('generic/<str:model_key>/list/', generic_list),
     path('generic/<str:model_key>/get/<int:object_id>/', generic_get_obj),
+    path('generic/<str:model_key>/update/<int:object_id>/', generic_update_obj),
+    path('generic/<str:model_key>/delete/<int:object_id>/', generic_delete_obj),
 ]
